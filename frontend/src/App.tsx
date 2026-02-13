@@ -1,6 +1,17 @@
 import { assets } from "./assets/assets";
+import { comics } from "./assets/data";
 
 const App = () => {
+  
+
+  const calculateProgress = (sum: number, current: number) => {
+    if (sum === 0) return 0;
+  return Math.round((current / sum) * 100);
+  }
+
+  console.log(calculateProgress(12, 2))
+
+
   return (
     <div className="bg-gray-100 w-full h-screen px-10 py-5">
       <div className="flex justify-end">
@@ -53,74 +64,48 @@ const App = () => {
       </header>
 
       <main className="flex flex-col gap-5">
-        <section className="grid grid-cols-[1fr_3fr] gap-5 py-4 px-10 bg-white rounded-3xl items-center outline-1 outline-black">
-          <img src="https://cdn2.penguin.com.au/covers/original/9781401297244.jpg" />
+        {comics.map((item, index) => (
+        <section key={index} className="grid grid-cols-[1fr_3fr] gap-5 py-4 px-10 bg-white rounded-3xl items-center outline-1 outline-black">
+          <img src={item.picture} />
           <section className="flex flex-col justify-center gap-5">
             <section className="flex flex-col gap-2 md:flex-row justify-between">
               <section>
-                <h2 className="text-xl">Batman: Hush</h2>
-                <p className="text-sm">Jeph Loeb - Jim Lee - Scot Williams</p>
+                <h2 className="text-xl">{item.title}</h2>
+                <p className="text-sm">
+                  {item.authors.map((item, index) => (
+                    <span>{item[index] === item[0] ? "" : " - "}{item}</span> 
+                  ))}
+                  </p>
               </section>
               <section className="flex gap-2 items-center">
-                  <img className="cursor-pointer" src={assets.star} width={30} />
-                <section className="flex py-1 px-2 bg-blue-300 rounded-xl gap-2 items-center outline-1 outline-blue-950 text-blue-950 cursor-pointer">
-                  <img src={assets.openBook} width={20} />
-                  <p>Reading</p>
+                  <img className="cursor-pointer" src={item.favorite === true ? assets.starFilled : assets.starOutline} width={30} />
+                <section className={`flex py-1 px-2  rounded-xl gap-2 items-center outline-1 ${item.status === "Complete" ? "bg-green-300 outline-green-950 text-green-950" : "bg-blue-300 outline-blue-950 text-blue-950"}`}>
+                  <img src={item.status === "Complete" ? assets.openBook : assets.book} width={20} />
+                  <p>{item.status}</p>
                 </section>
                 </section>
               </section>
               <section className="flex gap-2 items-center">
                 <section className="w-full h-3 bg-gray-300 rounded-3xl">
-                  <section className="w-12 h-3 bg-blue-300 rounded-3xl"></section>
+                  <section className={`h-3 rounded-3xl ${item.status === "Complete" ? "bg-green-300" : "bg-blue-300"}`} style={{ width: `${calculateProgress(item.chapterCount, item.currentChapter)}%`}}></section>
                 </section>
-                <p className="min-w-12.5 text-sm">2 / 12</p>
+                <p className="min-w-12.5 text-sm">{item.currentChapter} / {item.chapterCount}</p>
               </section>
               <section className="flex flex-wrap gap-2">
                 <button className="bg-gray-300 py-2 px-4 rounded-2xl text-sm cursor-pointer outline-1 outline-black">
                   <p>-1 Chapter</p>
                 </button>
-                <button className="bg-gray-300 py-2 px-4 rounded-2xl text-sm cursor-pointer outline-1 outline-black">
+                <button className={`bg-gray-300 py-2 px-4 rounded-2xl text-sm outline-1 outline-black ${item.currentChapter === item.chapterCount ? "opacity-45" : "cursor-pointer"}`}>
                   <p>+1 Chapter</p>
                 </button>
-                <button className="bg-black text-white py-2 px-4 rounded-2xl text-sm cursor-pointer outline-1 outline-black">
+                {item.status != "Complete" && <button className="bg-black text-white py-2 px-4 rounded-2xl text-sm cursor-pointer outline-1 outline-black">
                   <p>Mark Complete</p>
-                </button>
+                </button>}
+                
               </section>
             </section>
           </section>
-        
-        <section className="grid grid-cols-[1fr_3fr] gap-5 py-4 px-10 bg-white rounded-3xl items-center outline-1 outline-black">
-          <img src="https://m.media-amazon.com/images/S/compressed.photo.goodreads.com/books/1636210417i/59553021.jpg" />
-          <section className="flex flex-col justify-center gap-5">
-            <section className="flex flex-col gap-2 md:flex-row justify-between">
-              <section>
-                <h2 className="text-xl">Robin & Batman<span className="text-gray-600"> (2021-)</span></h2>
-                <p className="text-sm">Jeff Lemire - Dustin Nguyen</p>
-              </section>
-              <section className="flex gap-2 items-center">
-                  <img className="cursor-pointer" src={assets.star} width={30} />
-                <section className="flex py-1 px-2 bg-green-300 rounded-xl gap-2 items-center outline-1 outline-green-950 text-green-950 cursor-pointer">
-                  <img src={assets.book} width={20} />
-                  <p>Complete</p>
-                </section>
-                </section>
-              </section>
-              <section className="flex gap-2 items-center">
-                <section className="w-full h-3 bg-gray-300 rounded-3xl">
-                  <section className="w-full h-3 bg-green-300 rounded-3xl"></section>
-                </section>
-                <p className="min-w-12.5 text-sm">3 / 3</p>
-              </section>
-              <section className="flex flex-wrap gap-2">
-                <button className="bg-gray-300 py-2 px-4 rounded-2xl text-sm cursor-pointer outline-1 outline-black">
-                  <p>-1 Chapter</p>
-                </button>
-                <button className="bg-gray-300 py-2 px-4 rounded-2xl text-sm cursor-pointer outline-1 outline-black opacity-45">
-                  <p>+1 Chapter</p>
-                </button>
-              </section>
-            </section>
-          </section>
+      ))}
       </main>
     </div>
   );
