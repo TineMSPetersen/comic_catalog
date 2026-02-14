@@ -44,6 +44,18 @@ const App = () => {
     }
   }
 
+  const changeFavorite = async (comicId: string) => {
+    try {
+      const response = await axios.post(`${backendUrl}/api/comic/setfavorite`, {comicId})
+
+      if (response.data.success) {
+        fetchList();
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
   useEffect(() => {
     fetchList()
   }, [])
@@ -120,7 +132,7 @@ const App = () => {
                   </p>
               </section>
               <section className="flex gap-2 items-center">
-                  <img className="cursor-pointer" src={item.favorite === true ? assets.starFilled : assets.starOutline} width={30} />
+                  <img onClick={() => changeFavorite(item._id)} className="cursor-pointer" src={item.favorite === true ? assets.starFilled : assets.starOutline} width={30} />
                 <section className={`flex py-1 px-2  rounded-xl gap-2 items-center outline-1 ${item.status === "Complete" ? "bg-green-300 outline-green-950 text-green-950" : "bg-blue-300 outline-blue-950 text-blue-950"}`}>
                   <img src={item.status === "Complete" ? assets.openBook : assets.book} width={20} />
                   <p>{item.status}</p>
