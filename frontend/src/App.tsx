@@ -31,6 +31,19 @@ const App = () => {
     }
   };
 
+  const changeCurrentChapter = async (comicId: string, chapterCount: number, currentChapter: number) => {
+    try {
+      const response = await axios.post(`${backendUrl}/api/comic/chaptercount`, {comicId, chapterCount, currentChapter})
+
+      if (response.data.success) {
+        fetchList();
+      }
+
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
   useEffect(() => {
     fetchList()
   }, [])
@@ -121,13 +134,13 @@ const App = () => {
                 <p className="min-w-12.5 text-sm">{item.currentChapter} / {item.chapterCount}</p>
               </section>
               <section className="flex flex-wrap gap-2">
-                <button className="bg-gray-300 py-2 px-4 rounded-2xl text-sm cursor-pointer outline-1 outline-black">
+                <button onClick={() => changeCurrentChapter(item._id, item.chapterCount, item.currentChapter-1)} className={`bg-gray-300 py-2 px-4 rounded-2xl text-sm outline-1 outline-black ${item.currentChapter === 0 ? "opacity-45" : "cursor-pointer"}`}>
                   <p>-1 Chapter</p>
                 </button>
-                <button className={`bg-gray-300 py-2 px-4 rounded-2xl text-sm outline-1 outline-black ${item.currentChapter === item.chapterCount ? "opacity-45" : "cursor-pointer"}`}>
+                <button onClick={() => changeCurrentChapter(item._id, item.chapterCount, item.currentChapter+1)} className={`bg-gray-300 py-2 px-4 rounded-2xl text-sm outline-1 outline-black ${item.currentChapter === item.chapterCount ? "opacity-45" : "cursor-pointer"}`}>
                   <p>+1 Chapter</p>
                 </button>
-                {item.status != "Complete" && <button className="bg-black text-white py-2 px-4 rounded-2xl text-sm cursor-pointer outline-1 outline-black">
+                {item.status != "Complete" && <button onClick={() => changeCurrentChapter(item._id, item.chapterCount, item.chapterCount)} className="bg-black text-white py-2 px-4 rounded-2xl text-sm cursor-pointer outline-1 outline-black">
                   <p>Mark Complete</p>
                 </button>}
                 

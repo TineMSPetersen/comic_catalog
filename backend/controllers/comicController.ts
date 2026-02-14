@@ -41,11 +41,21 @@ const listComics = async (req: Request, res: Response): Promise<void> => {
 
 const chapterCount = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { comicId, currentChapter } = req.body;
+    const { comicId, chapterCount, currentChapter } = req.body;
 
     const comic = await comicModel.findById(comicId);
 
-    if (currentChapter) comic.currentChapter = currentChapter;
+    if (currentChapter > chapterCount) {
+      res.json({ success: false, message: "Current chapter can't exceed chapter count", comic });
+    }
+    if (currentChapter < 0) {
+      res.json({ success: false, message: "Current chapter can't be negative" });
+    }
+
+    if (currentChapter === chapterCount) comic.status = "Complete"
+    if (currentChapter < chapterCount) comic.status = "Reading"
+    
+    comic.currentChapter = currentChapter;
     
     await comic.save();
 
@@ -58,5 +68,7 @@ const chapterCount = async (req: Request, res: Response): Promise<void> => {
     });
   }
 }
+
+
 
 export { addComic, listComics, chapterCount }
