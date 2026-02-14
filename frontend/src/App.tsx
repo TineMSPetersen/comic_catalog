@@ -1,15 +1,44 @@
+import { useEffect, useState } from "react";
+import axios from "axios";
 import { assets } from "./assets/assets";
-import { comics } from "./assets/data";
 
 const App = () => {
-  
+  const [ list, setList ] = useState<Comic[]>([]);
+
+  const backendUrl = import.meta.env.VITE_BACKEND_URL;
+
+  interface Comic {
+    _id: string;
+    title: string;
+    author: string[];
+    picture: string;
+    favorite: boolean;
+    status: string;
+    chapterCount: number;
+    currentChapter: number;
+  }
+
+  const fetchList = async () => {
+    try {
+      const response = await axios.get(`${backendUrl}/api/comic/listcomics`);
+      console.log(response)
+
+      if (response.data.success) {
+        setList(response.data.comics);
+      }
+    } catch (error : any) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    fetchList()
+  }, [])
 
   const calculateProgress = (sum: number, current: number) => {
     if (sum === 0) return 0;
   return Math.round((current / sum) * 100);
   }
-
-  console.log(calculateProgress(12, 2))
 
 
   return (
@@ -64,7 +93,7 @@ const App = () => {
       </header>
 
       <main className="flex flex-col gap-5">
-        {comics.map((item, index) => (
+        {list.map((item, index) => (
         <section key={index} className="grid grid-cols-[1fr_3fr] gap-5 py-4 px-10 bg-white rounded-3xl items-center outline-1 outline-black">
           <img src={item.picture} />
           <section className="flex flex-col justify-center gap-5">
@@ -72,7 +101,7 @@ const App = () => {
               <section>
                 <h2 className="text-xl">{item.title}</h2>
                 <p className="text-sm">
-                  {item.authors.map((item, index) => (
+                  {item.author.map((item, index) => (
                     <span>{item[index] === item[0] ? "" : " - "}{item}</span> 
                   ))}
                   </p>
