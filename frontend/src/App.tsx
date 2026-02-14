@@ -1,15 +1,69 @@
+import { useEffect, useState } from "react";
+import axios from "axios";
 import { assets } from "./assets/assets";
-import { comics } from "./assets/data";
 
 const App = () => {
-  
+  const [ list, setList ] = useState<Comic[]>([]);
+
+  const backendUrl = import.meta.env.VITE_BACKEND_URL;
+
+  interface Comic {
+    _id: string;
+    title: string;
+    author: string[];
+    picture: string;
+    favorite: boolean;
+    status: string;
+    chapterCount: number;
+    currentChapter: number;
+  }
+
+  const fetchList = async () => {
+    try {
+      const response = await axios.get(`${backendUrl}/api/comic/listcomics`);
+      console.log(response)
+
+      if (response.data.success) {
+        setList(response.data.comics);
+      }
+    } catch (error : any) {
+      console.log(error);
+    }
+  };
+
+  const changeCurrentChapter = async (comicId: string, chapterCount: number, currentChapter: number) => {
+    try {
+      const response = await axios.post(`${backendUrl}/api/comic/chaptercount`, {comicId, chapterCount, currentChapter})
+
+      if (response.data.success) {
+        fetchList();
+      }
+
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  const changeFavorite = async (comicId: string) => {
+    try {
+      const response = await axios.post(`${backendUrl}/api/comic/setfavorite`, {comicId})
+
+      if (response.data.success) {
+        fetchList();
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  useEffect(() => {
+    fetchList()
+  }, [])
 
   const calculateProgress = (sum: number, current: number) => {
     if (sum === 0) return 0;
   return Math.round((current / sum) * 100);
   }
-
-  console.log(calculateProgress(12, 2))
 
 
   return (
@@ -64,7 +118,7 @@ const App = () => {
       </header>
 
       <main className="flex flex-col gap-5">
-        {comics.map((item, index) => (
+        {list.map((item, index) => (
         <section key={index} className="grid grid-cols-[1fr_3fr] gap-5 py-4 px-10 bg-white rounded-3xl items-center outline-1 outline-black">
           <img src={item.picture} />
           <section className="flex flex-col justify-center gap-5">
@@ -72,13 +126,13 @@ const App = () => {
               <section>
                 <h2 className="text-xl">{item.title}</h2>
                 <p className="text-sm">
-                  {item.authors.map((item, index) => (
+                  {item.author.map((item, index) => (
                     <span>{item[index] === item[0] ? "" : " - "}{item}</span> 
                   ))}
                   </p>
               </section>
               <section className="flex gap-2 items-center">
-                  <img className="cursor-pointer" src={item.favorite === true ? assets.starFilled : assets.starOutline} width={30} />
+                  <img onClick={() => changeFavorite(item._id)} className="cursor-pointer" src={item.favorite === true ? assets.starFilled : assets.starOutline} width={30} />
                 <section className={`flex py-1 px-2  rounded-xl gap-2 items-center outline-1 ${item.status === "Complete" ? "bg-green-300 outline-green-950 text-green-950" : "bg-blue-300 outline-blue-950 text-blue-950"}`}>
                   <img src={item.status === "Complete" ? assets.openBook : assets.book} width={20} />
                   <p>{item.status}</p>
@@ -92,13 +146,13 @@ const App = () => {
                 <p className="min-w-12.5 text-sm">{item.currentChapter} / {item.chapterCount}</p>
               </section>
               <section className="flex flex-wrap gap-2">
-                <button className="bg-gray-300 py-2 px-4 rounded-2xl text-sm cursor-pointer outline-1 outline-black">
+                <button onClick={() => changeCurrentChapter(item._id, item.chapterCount, item.currentChapter-1)} className={`bg-gray-300 py-2 px-4 rounded-2xl text-sm outline-1 outline-black ${item.currentChapter === 0 ? "opacity-45" : "cursor-pointer"}`}>
                   <p>-1 Chapter</p>
                 </button>
-                <button className={`bg-gray-300 py-2 px-4 rounded-2xl text-sm outline-1 outline-black ${item.currentChapter === item.chapterCount ? "opacity-45" : "cursor-pointer"}`}>
+                <button onClick={() => changeCurrentChapter(item._id, item.chapterCount, item.currentChapter+1)} className={`bg-gray-300 py-2 px-4 rounded-2xl text-sm outline-1 outline-black ${item.currentChapter === item.chapterCount ? "opacity-45" : "cursor-pointer"}`}>
                   <p>+1 Chapter</p>
                 </button>
-                {item.status != "Complete" && <button className="bg-black text-white py-2 px-4 rounded-2xl text-sm cursor-pointer outline-1 outline-black">
+                {item.status != "Complete" && <button onClick={() => changeCurrentChapter(item._id, item.chapterCount, item.chapterCount)} className="bg-black text-white py-2 px-4 rounded-2xl text-sm cursor-pointer outline-1 outline-black">
                   <p>Mark Complete</p>
                 </button>}
                 
