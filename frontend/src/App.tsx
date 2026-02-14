@@ -6,6 +6,33 @@ const App = () => {
   const [list, setList] = useState<Comic[]>([]);
   const [filter, setFilter] = useState("All");
 
+  const statusConfig = {
+    Complete: {
+      bg: "bg-green-300",
+      outline: "outline-green-950",
+      text: "text-green-950",
+      icon: assets.openBook,
+    },
+    Reading: {
+      bg: "bg-blue-300",
+      outline: "outline-blue-950",
+      text: "text-blue-950",
+      icon: assets.book,
+    },
+    Paused: {
+      bg: "bg-yellow-300",
+      outline: "outline-yellow-950",
+      text: "text-yellow-950",
+      icon: assets.pause,
+    },
+    Later: {
+      bg: "bg-purple-300",
+      outline: "outline-purple-950",
+      text: "text-purple-950",
+      icon: assets.clock,
+    },
+  };
+
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
   interface Comic {
@@ -14,7 +41,7 @@ const App = () => {
     author: string[];
     picture: string;
     favorite: boolean;
-    status: string;
+    status: "Complete" | "Reading" | "Paused" | "Later";
     chapterCount: number;
     currentChapter: number;
   }
@@ -22,7 +49,6 @@ const App = () => {
   const fetchList = async () => {
     try {
       const response = await axios.get(`${backendUrl}/api/comic/listcomics`);
-      console.log(response);
 
       if (response.data.success) {
         setList(response.data.comics);
@@ -56,6 +82,24 @@ const App = () => {
       const response = await axios.post(`${backendUrl}/api/comic/setfavorite`, {
         comicId,
       });
+
+      if (response.data.success) {
+        fetchList();
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const changeStatus = async (comicId: string, status: string) => {
+    try {
+      const response = await axios.post(
+        `${backendUrl}/api/comic/changestatus`,
+        {
+          comicId,
+          status,
+        },
+      );
 
       if (response.data.success) {
         fetchList();
@@ -141,144 +185,167 @@ const App = () => {
       </header>
 
       <main className="flex flex-col gap-5">
-        {list
-          .filter((item) => filter === "All" || item.status === filter)
-          .map((item) => (
-            <section
-              key={item._id}
-              className="grid grid-cols-[1fr_3fr] gap-5 py-4 px-10 bg-white rounded-3xl items-center outline-1 outline-black"
-            >
-              <img src={item.picture} />
+  {list
+    .filter((item) => filter === "All" || item.status === filter)
+    .map((item) => {
+      const status = statusConfig[item.status];
 
-              <section className="flex flex-col justify-center gap-5">
-                <section className="flex flex-col gap-2 md:flex-row justify-between">
-                  <section>
-                    <h2 className="text-xl">{item.title}</h2>
-                    <p className="text-sm">
-                      {item.author.map((author, index) => (
-                        <span key={index}>
-                          {index === 0 ? "" : " - "}
-                          {author}
-                        </span>
-                      ))}
-                    </p>
-                  </section>
+      return (
+        <section
+          key={item._id}
+          className="grid grid-cols-[1fr_3fr] gap-5 py-4 px-10 bg-white rounded-3xl items-center outline-1 outline-black"
+        >
+          <img src={item.picture} />
 
-                  <section className="flex gap-2 items-center">
-                    <img
-                      onClick={() => changeFavorite(item._id)}
-                      className="cursor-pointer"
-                      src={
-                        item.favorite ? assets.starFilled : assets.starOutline
-                      }
-                      width={30}
-                    />
+          <section className="flex flex-col justify-between gap-5">
+            <section className="flex flex-col gap-2 md:flex-row justify-between">
+              <section>
+                <h2 className="text-xl">{item.title}</h2>
+                <p className="text-sm">
+                  {item.author.map((author, index) => (
+                    <span key={index}>
+                      {index === 0 ? "" : " - "}
+                      {author}
+                    </span>
+                  ))}
+                </p>
+              </section>
 
+              <section className="flex gap-2 items-center">
+                <img
+                  onClick={() => changeFavorite(item._id)}
+                  className="cursor-pointer"
+                  src={item.favorite ? assets.starFilled : assets.starOutline}
+                  width={30}
+                />
+
+                <section
+                  className={`flex py-1 px-2 rounded-xl gap-2 items-center outline-1 
+                    ${status.bg} ${status.outline} ${status.text}`}
+                >
+                  <img src={status.icon} width={20} />
+                  <p>{item.status}</p>
+                </section>
+              </section>
+            </section>
+
+            {item.status === "Later" ? (
+              <section className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => {
+                    changeStatus(item._id, "Reading");
+                    changeCurrentChapter(item._id, item.chapterCount, 0);
+                  }}
+                  className="bg-black text-white py-2 px-4 rounded-2xl text-sm cursor-pointer outline-1 outline-black"
+                >
+                  Start Reading
+                </button>
+              </section>
+            ) : (
+              <>
+                <section className="flex gap-2 items-center">
+                  <section className={`w-full h-3 bg-gray-300 rounded-3xl ${item.status === "Paused" && "opacity-45"}`}>
                     <section
-                      className={`flex py-1 px-2 rounded-xl gap-2 items-center outline-1 ${
+                      className={`h-3 rounded-3xl ${
                         item.status === "Complete"
-                          ? "bg-green-300 outline-green-950 text-green-950"
-                          : "bg-blue-300 outline-blue-950 text-blue-950"
+                          ? "bg-green-300"
+                          : "bg-blue-300"
                       }`}
-                    >
-                      <img
-                        src={
-                          item.status === "Complete"
-                            ? assets.openBook
-                            : assets.book
-                        }
-                        width={20}
-                      />
-                      <p>{item.status}</p>
-                    </section>
+                      style={{
+                        width: `${calculateProgress(
+                          item.chapterCount,
+                          item.currentChapter
+                        )}%`,
+                      }}
+                    />
                   </section>
+                  <p className="min-w-12.5 text-sm">
+                    {item.currentChapter} / {item.chapterCount}
+                  </p>
                 </section>
 
-                {item.status === "Later" ? (
+                {item.status === "Paused" ? (
                   <section className="flex flex-wrap gap-2">
-                    <button className="bg-black text-white py-2 px-4 rounded-2xl text-sm cursor-pointer outline-1 outline-black">
-                      Start Reading
+                    <button
+                      onClick={() => changeStatus(item._id, "Reading")}
+                      className="bg-black text-white py-2 px-4 rounded-2xl text-sm cursor-pointer outline-1 outline-black"
+                    >
+                      Resume Reading
                     </button>
                   </section>
                 ) : (
-                  <>
-                    <section className="flex gap-2 items-center">
-                      <section className="w-full h-3 bg-gray-300 rounded-3xl">
-                        <section
-                          className={`h-3 rounded-3xl ${
-                            item.status === "Complete"
-                              ? "bg-green-300"
-                              : "bg-blue-300"
-                          }`}
-                          style={{
-                            width: `${calculateProgress(
-                              item.chapterCount,
-                              item.currentChapter,
-                            )}%`,
-                          }}
-                        />
-                      </section>
-                      <p className="min-w-12.5 text-sm">
-                        {item.currentChapter} / {item.chapterCount}
-                      </p>
-                    </section>
+                  <section className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() =>
+                        changeCurrentChapter(
+                          item._id,
+                          item.chapterCount,
+                          item.currentChapter - 1
+                        )
+                      }
+                      className={`bg-gray-300 py-2 px-4 rounded-2xl text-sm outline-1 outline-black ${
+                        item.currentChapter === 0 ? "opacity-45" : "cursor-pointer"
+                      }`}
+                    >
+                      -1 Chapter
+                    </button>
 
-                    <section className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() =>
+                        changeCurrentChapter(
+                          item._id,
+                          item.chapterCount,
+                          item.currentChapter + 1
+                        )
+                      }
+                      className={`bg-gray-300 py-2 px-4 rounded-2xl text-sm outline-1 outline-black ${
+                        item.currentChapter === item.chapterCount
+                          ? "opacity-45"
+                          : "cursor-pointer"
+                      }`}
+                    >
+                      +1 Chapter
+                    </button>
+
+                    {item.status !== "Complete" && (
                       <button
-                        onClick={() =>
-                          changeCurrentChapter(
-                            item._id,
-                            item.chapterCount,
-                            item.currentChapter - 1,
-                          )
-                        }
-                        className={`bg-gray-300 py-2 px-4 rounded-2xl text-sm outline-1 outline-black ${
-                          item.currentChapter === 0
-                            ? "opacity-45"
-                            : "cursor-pointer"
-                        }`}
+                        onClick={() => changeStatus(item._id, "Complete")}
+                        className="bg-black text-white py-2 px-4 rounded-2xl text-sm cursor-pointer outline-1 outline-black"
                       >
-                        -1 Chapter
+                        Mark Complete
                       </button>
+                    )}
+                  </section>
+                )}
+              </>
+            )}
 
-                      <button
-                        onClick={() =>
-                          changeCurrentChapter(
-                            item._id,
-                            item.chapterCount,
-                            item.currentChapter + 1,
-                          )
-                        }
-                        className={`bg-gray-300 py-2 px-4 rounded-2xl text-sm outline-1 outline-black ${
-                          item.currentChapter === item.chapterCount
-                            ? "opacity-45"
-                            : "cursor-pointer"
-                        }`}
-                      >
-                        +1 Chapter
-                      </button>
+            {item.status !== "Complete" && (
+              <section className="flex justify-end gap-2">
+                {item.status !== "Paused" && item.status !== "Later" && (
+                  <p
+                    onClick={() => changeStatus(item._id, "Paused")}
+                    className="text-gray-400 underline cursor-pointer"
+                  >
+                    Put On Hold
+                  </p>
+                )}
 
-                      {item.status !== "Complete" && (
-                        <button
-                          onClick={() =>
-                            changeCurrentChapter(
-                              item._id,
-                              item.chapterCount,
-                              item.chapterCount,
-                            )
-                          }
-                          className="bg-black text-white py-2 px-4 rounded-2xl text-sm cursor-pointer outline-1 outline-black"
-                        >
-                          Mark Complete
-                        </button>
-                      )}
-                    </section>
-                  </>
+                {item.status !== "Later" && (
+                  <p
+                    onClick={() => changeStatus(item._id, "Later")}
+                    className="text-gray-400 underline cursor-pointer"
+                  >
+                    Add to later
+                  </p>
                 )}
               </section>
-            </section>
-          ))}
-      </main>
+            )}
+          </section>
+        </section>
+      );
+    })}
+</main>
     </div>
   );
 };

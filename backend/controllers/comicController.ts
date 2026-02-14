@@ -89,5 +89,31 @@ const setFavorite = async (req: Request, res: Response): Promise<void> => {
   }
 } 
 
+const changeStatus = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { comicId, status } = req.body;
 
-export { addComic, listComics, chapterCount, setFavorite }
+    const comic = await comicModel.findById(comicId);
+
+    if (status === "Complete") comic.currentChapter = comic.chapterCount;
+    
+
+    comic.status = status;
+
+    if (comic.currentChapter === comic.chapterCount) comic.status = "Complete";
+
+    await comic.save();
+
+    res.json({ success: true, comic });
+
+  } catch (error: any) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Internal Server Error",
+    });
+  }
+}
+
+
+export { addComic, listComics, chapterCount, setFavorite, changeStatus }
